@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Информационный сервис ЧелГУ</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #fff3e0;
+                color: #5c0033; /* Бордовый */
+            }
+            #chat-container {
+                max-width: 800px;
+                margin: 50px auto;
+                background: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                padding: 30px;
+                border: 3px solid #5c0033; /* Бордовый */
+            }
+            #messages {
+                height: 500px;
+                overflow-y: auto;
+                padding: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                margin-bottom: 20px;
+                background-color: #ffe0b2; /* Светло-оранжевый */
+            }
+            .message {
+                margin: 15px 0;
+                padding: 12px;
+                border-radius: 10px;
+                max-width: 80%;
+            }
+            .user {
+                background-color: #f0f0f0; /* Светло-серый для сообщений пользователя */
+                color: #333333; /* Темный текст */
+                text-align: right;
+                margin-left: auto;
+            }
+            .bot {
+                background-color: #f9f9f9; /* Очень светлый желтоватый для сообщений бота */
+                color: #333333; /* Темный текст */
+                text-align: left;
+                margin-right: auto;
+            }
+            #input-container {
+                display: flex;
+                gap: 15px;
+                margin-top: 20px;
+            }
+            input {
+                flex: 1;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 16px;
+            }
+            button {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 5px;
+                background-color: #5c0033; /* Бордовый */
+                color: #fff;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            button:hover {
+                background-color: #9b0000; /* Темный бордовый */
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chat-container">
+            <h1>Информационный сервис ЧелГУ</h1>
+            <p>Добро пожаловать! Этот бот поможет вам найти нужную информацию.</p>
+            <div id="messages">
+                <div class="message bot">Привет! Добро пожаловать в информационный сервис ЧелГУ! Как я могу помочь?</div>
+            </div>
+            <div id="input-container">
+                <input id="messageInput" type="text" placeholder="Введите сообщение" />
+                <button onclick="sendMessage()">Отправить</button>
+                <button onclick="getNews()">Получить актуальные новости</button>
+            </div>
+        </div>
+        <script>
+            async function sendMessage() {
+                const input = document.getElementById('messageInput');
+                const messages = document.getElementById('messages');
+                const userMessage = input.value;
+                if (!userMessage) return;
+
+                // Добавить сообщение пользователя
+                const userDiv = document.createElement('div');
+                userDiv.className = 'message user';
+                userDiv.textContent = userMessage;
+                messages.appendChild(userDiv);
+
+                // Прокрутить вниз
+                messages.scrollTop = messages.scrollHeight;
+
+                // Отправить сообщение на сервер
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                const data = await response.json();
+
+                // Добавить ответ бота (поддерживаем HTML-контент)
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message bot';
+                botDiv.innerHTML = data.response || 'Ошибка'; // Используем innerHTML, чтобы отобразить HTML
+                messages.appendChild(botDiv);
+
+                // Прокрутить вниз
+                messages.scrollTop = messages.scrollHeight;
+
+                input.value = '';
+            }
+
+            async function getNews() {
+                const messages = document.getElementById('messages');
+
+                // Добавить запрос новости от бота
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message bot';
+                botDiv.textContent = 'Получаю новости...';
+                messages.appendChild(botDiv);
+
+                // Прокрутить вниз
+                messages.scrollTop = messages.scrollHeight;
+
+                // Отправить запрос на получение новостей
+                const response = await fetch('/news');
+                const data = await response.json();
+
+                // Добавить новости в чат
+                if (data.news && data.news.length > 0) {
+                    data.news.forEach(newsItem => {
+                        const newsDiv = document.createElement('div');
+                        newsDiv.className = 'message bot';
+                        newsDiv.innerHTML = `
+                            <strong>Заголовок:</strong> ${newsItem.title}<br>
+                            <strong>Дата:</strong> ${newsItem.date}<br>
+                            <strong>Ссылка:</strong> <a href="${newsItem.link}" target="_blank">Перейти по ссылке</a>
+                        `;
+                        messages.appendChild(newsDiv);
+                    });
+                } else {
+                    const newsDiv = document.createElement('div');
+                    newsDiv.className = 'message bot';
+                    newsDiv.textContent = 'Ошибка при получении новостей';
+                    messages.appendChild(newsDiv);
+                }
+
+                // Прокрутить вниз
+                messages.scrollTop = messages.scrollHeight;
+            }
+        </script>
+    </body>
+    </html>
